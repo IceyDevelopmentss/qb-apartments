@@ -3,7 +3,7 @@ game 'gta5'
 lua54 'yes'
 author 'Kakarot'
 description 'Provides players with an apartment on server join'
-version '2.2.1'
+version '2.2.2'
 
 shared_scripts {
     '@ox_lib/init.lua',
