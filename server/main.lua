@@ -1,7 +1,4 @@
 local ApartmentObjects = {}
-local QBCore = exports['qb-core']:GetCoreObject({ 'Functions' })
-
--- Functions
 
 local function CreateApartmentId(type)
     local UniqueFound = false
@@ -26,11 +23,11 @@ local function GetApartmentInfo(apartmentId)
     return retval
 end
 
--- Events
-
 RegisterNetEvent('qb-apartments:server:SetInsideMeta', function(house, insideId, bool, isVisiting)
     local src = source
-    local Player = exports['qb-core']:GetPlayer(src)
+    local Player = exports.qbx_core:GetPlayer(src)
+    if not Player then return end
+    
     local insideMeta = Player.PlayerData.metadata['inside']
 
     if bool then
@@ -39,17 +36,16 @@ RegisterNetEvent('qb-apartments:server:SetInsideMeta', function(house, insideId,
             insideMeta.apartment.apartmentType = house
             insideMeta.apartment.apartmentId = insideId
             insideMeta.house = nil
-            Player.SetMetaData('inside', insideMeta)
+            exports.qbx_core:SetMetadata(src, 'inside', insideMeta)
         end
-        QBCore.Functions.SetPlayerBucket(src, tonumber(routeId))
+        SetPlayerRoutingBucket(src, tonumber(routeId))
     else
         insideMeta.apartment.apartmentType = nil
         insideMeta.apartment.apartmentId = nil
         insideMeta.house = nil
 
-
-        Player.SetMetaData('inside', insideMeta)
-        QBCore.Functions.SetPlayerBucket(src, 0)
+        exports.qbx_core:SetMetadata(src, 'inside', insideMeta)
+        SetPlayerRoutingBucket(src, 0)
     end
 end)
 
@@ -60,12 +56,15 @@ end)
 
 RegisterNetEvent('apartments:server:openStash', function(CurrentApartment)
     local src = source
-    exports['qb-inventory']:OpenInventory(src, CurrentApartment)
+    exports.ox_inventory:RegisterStash(CurrentApartment, CurrentApartment, 50, 100000, false)
+    TriggerClientEvent('apartments:client:openStash', src, CurrentApartment)
 end)
 
 RegisterNetEvent('apartments:server:CreateApartment', function(type, label, firstSpawn)
     local src = source
-    local Player = exports['qb-core']:GetPlayer(src)
+    local Player = exports.qbx_core:GetPlayer(src)
+    if not Player then return end
+    
     local num = CreateApartmentId(type)
     local apartmentId = tostring(type .. num)
     label = tostring(label .. ' ' .. num)
@@ -75,7 +74,7 @@ RegisterNetEvent('apartments:server:CreateApartment', function(type, label, firs
         label,
         Player.PlayerData.citizenid
     })
-    TriggerClientEvent('QBCore:Notify', src, Lang:t('success.receive_apart') .. ' (' .. label .. ')')
+    exports.qbx_core:Notify(src, Lang:t('success.receive_apart') .. ' (' .. label .. ')', 'success')
     if firstSpawn then
         TriggerClientEvent('apartments:client:SpawnInApartment', src, apartmentId, type)
     end
@@ -84,9 +83,11 @@ end)
 
 RegisterNetEvent('apartments:server:UpdateApartment', function(type, label)
     local src = source
-    local Player = exports['qb-core']:GetPlayer(src)
+    local Player = exports.qbx_core:GetPlayer(src)
+    if not Player then return end
+    
     MySQL.update('UPDATE apartments SET type = ?, label = ? WHERE citizenid = ?', { type, label, Player.PlayerData.citizenid })
-    TriggerClientEvent('QBCore:Notify', src, Lang:t('success.changed_apart'))
+    exports.qbx_core:Notify(src, Lang:t('success.changed_apart'), 'success')
     TriggerClientEvent('apartments:client:SetHomeBlip', src, type)
 end)
 
@@ -100,7 +101,7 @@ RegisterNetEvent('apartments:server:RingDoor', function(apartmentId, apartment)
 end)
 
 RegisterNetEvent('apartments:server:OpenDoor', function(target, apartmentId, apartment)
-    local OtherPlayer = exports['qb-core']:GetPlayer(target)
+    local OtherPlayer = exports.qbx_core:GetPlayer(target)
     if OtherPlayer ~= nil then
         TriggerClientEvent('apartments:client:SpawnInApartment', OtherPlayer.PlayerData.source, apartmentId, apartment)
     end
@@ -108,7 +109,9 @@ end)
 
 RegisterNetEvent('apartments:server:AddObject', function(apartmentId, apartment, offset)
     local src = source
-    local Player = exports['qb-core']:GetPlayer(src)
+    local Player = exports.qbx_core:GetPlayer(src)
+    if not Player then return end
+    
     if ApartmentObjects[apartment] ~= nil and ApartmentObjects[apartment].apartments ~= nil and ApartmentObjects[apartment].apartments[apartmentId] ~= nil then
         ApartmentObjects[apartment].apartments[apartmentId].players[src] = Player.PlayerData.citizenid
     else
@@ -139,16 +142,14 @@ RegisterNetEvent('apartments:server:RemoveObject', function(apartmentId, apartme
 end)
 
 RegisterNetEvent('apartments:server:setCurrentApartment', function(ap)
-    local Player = exports['qb-core']:GetPlayer(source)
+    local Player = exports.qbx_core:GetPlayer(source)
 
     if not Player then return end
 
-    Player.SetMetaData('currentapartment', ap)
+    exports.qbx_core:SetMetadata(source, 'currentapartment', ap)
 end)
 
--- Callbacks
-
-QBCore.Functions.CreateCallback('apartments:GetAvailableApartments', function(_, cb, apartment)
+lib.callback.register('apartments:GetAvailableApartments', function(source, apartment)
     local apartments = {}
     if ApartmentObjects ~= nil and ApartmentObjects[apartment] ~= nil and ApartmentObjects[apartment].apartments ~= nil then
         for k, _ in pairs(ApartmentObjects[apartment].apartments) do
@@ -158,10 +159,10 @@ QBCore.Functions.CreateCallback('apartments:GetAvailableApartments', function(_,
             end
         end
     end
-    cb(apartments)
+    return apartments
 end)
 
-QBCore.Functions.CreateCallback('apartments:GetApartmentOffset', function(_, cb, apartmentId)
+lib.callback.register('apartments:GetApartmentOffset', function(source, apartmentId)
     local retval = 0
     if ApartmentObjects ~= nil then
         for k, _ in pairs(ApartmentObjects) do
@@ -170,10 +171,10 @@ QBCore.Functions.CreateCallback('apartments:GetApartmentOffset', function(_, cb,
             end
         end
     end
-    cb(retval)
+    return retval
 end)
 
-QBCore.Functions.CreateCallback('apartments:GetApartmentOffsetNewOffset', function(_, cb, apartment)
+lib.callback.register('apartments:GetApartmentOffsetNewOffset', function(source, apartment)
     local retval = Apartments.SpawnOffset
     if ApartmentObjects ~= nil and ApartmentObjects[apartment] ~= nil and ApartmentObjects[apartment].apartments ~= nil then
         for k, _ in pairs(ApartmentObjects[apartment].apartments) do
@@ -182,55 +183,55 @@ QBCore.Functions.CreateCallback('apartments:GetApartmentOffsetNewOffset', functi
             end
         end
     end
-    cb(retval)
+    return retval
 end)
 
-QBCore.Functions.CreateCallback('apartments:GetOwnedApartment', function(source, cb, cid)
+lib.callback.register('apartments:GetOwnedApartment', function(source, cid)
     if cid ~= nil then
         local result = MySQL.query.await('SELECT * FROM apartments WHERE citizenid = ?', { cid })
         if result[1] ~= nil then
-            return cb(result[1])
+            return result[1]
         end
-        return cb(nil)
+        return nil
     else
         local src = source
-        local Player = exports['qb-core']:GetPlayer(src)
+        local Player = exports.qbx_core:GetPlayer(src)
+        if not Player then return nil end
+        
         local result = MySQL.query.await('SELECT * FROM apartments WHERE citizenid = ?', { Player.PlayerData.citizenid })
         if result[1] ~= nil then
-            return cb(result[1])
+            return result[1]
         end
-        return cb(nil)
+        return nil
     end
 end)
 
-QBCore.Functions.CreateCallback('apartments:IsOwner', function(source, cb, apartment)
+lib.callback.register('apartments:IsOwner', function(source, apartment)
     local src = source
-    local Player = exports['qb-core']:GetPlayer(src)
+    local Player = exports.qbx_core:GetPlayer(src)
     if Player ~= nil then
         local result = MySQL.query.await('SELECT * FROM apartments WHERE citizenid = ?', { Player.PlayerData.citizenid })
         if result[1] ~= nil then
             if result[1].type == apartment then
-                cb(true)
+                return true
             else
-                cb(false)
+                return false
             end
         else
-            cb(false)
+            return false
         end
     end
+    return false
 end)
 
-
-QBCore.Functions.CreateCallback('apartments:GetOutfits', function(source, cb)
+lib.callback.register('apartments:GetOutfits', function(source)
     local src = source
-    local Player = exports['qb-core']:GetPlayer(src)
+    local Player = exports.qbx_core:GetPlayer(src)
+    if not Player then return nil end
 
-    if Player then
-        local result = MySQL.query.await('SELECT * FROM player_outfits WHERE citizenid = ?', { Player.PlayerData.citizenid })
-        if result[1] ~= nil then
-            cb(result)
-        else
-            cb(nil)
-        end
+    local result = MySQL.query.await('SELECT * FROM player_outfits WHERE citizenid = ?', { Player.PlayerData.citizenid })
+    if result[1] ~= nil then
+        return result
     end
+    return nil
 end)
