@@ -6,8 +6,8 @@ description 'Provides players with an apartment on server join'
 version '2.2.1'
 
 shared_scripts {
+    '@ox_lib/init.lua',
     'config.lua',
-    '@qb-core/shared/locale.lua',
     'locales/en.lua',
     'locales/*.lua'
 }
@@ -18,6 +18,7 @@ server_scripts {
 }
 
 client_scripts {
+    '@qbx_core/modules/playerdata.lua',
     'client/main.lua',
     '@PolyZone/client.lua',
     '@PolyZone/BoxZone.lua',
@@ -25,8 +26,7 @@ client_scripts {
 }
 
 dependencies {
-    'qb-core',
+    'qbx_core',
+    'ox_lib',
     'qb-interior',
-    'qb-clothing',
-    'qb-weathersync',
 }
