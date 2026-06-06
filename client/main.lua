@@ -734,7 +734,7 @@ else
 
                 if IsInsideLogoutZone then
                     if IsControlJustPressed(0, 38) then
-                        TriggerClientEvent('um-multicharacter:client:logout', src)
+                        TriggerEvent('apartments:client:Logout')
                         lib.hideTextUI()
                     end
                 end
