@@ -24,7 +24,6 @@ Apartments System for QB-Core Framework :office:
 - [ox_lib](https://github.com/overextended/ox_lib)
 - [qbx_core](https://github.com/Qbox-project/qbx_core)
 - [qb-interior](https://github.com/qbcore-framework/qb-interior) - Interior logic
-- [qb-weathersync](https://github.com/qbcore-framework/qb-weathersync) - To desync weather while inside
 
 ## Screenshots
 ![Inside Apartment](https://i.imgur.com/mp3XL4Y.jpg)
