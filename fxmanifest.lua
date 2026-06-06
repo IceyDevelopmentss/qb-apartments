@@ -8,6 +8,7 @@ version '2.2.2'
 shared_scripts {
     '@ox_lib/init.lua',
     'config.lua',
+    'shared/locale.lua',
     'locales/en.lua',
     'locales/*.lua'
 }
